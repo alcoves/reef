@@ -1,7 +1,10 @@
 {
     "recommendations": [
-        "ms-azuretools.vscode-docker",
         "esbenp.prettier-vscode",
-        "bradlc.vscode-tailwindcss"
+        "bradlc.vscode-tailwindcss",
+        "ms-azuretools.vscode-docker",
+        "oven.bun-vscode",
+        "biomejs.biome",
+        "svelte.svelte-vscode"
     ]
 }

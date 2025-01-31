@@ -1,23 +1,34 @@
 {
-	"peacock.color": "#1c24dc",
-	"peacock.remoteColor": "#bf1e2e",
-    "[typescript]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[typescriptreact]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
+	"[typescript]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
 	"[javascript]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[json]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"[svelte]": {
+		"editor.defaultFormatter": "svelte.svelte-vscode"
+	},
+	"editor.codeActionsOnSave": {
+		"quickfix.biome": "explicit",
+		"source.organizeImports.biome": "explicit"
 	},
 	"workbench.colorCustomizations": {
-		"activityBar.activeBackground": "#df3143",
+		"folderPathColor.custom1": "#dc884b",
+		"folderPathColor.custom2": "#a176d4",
 		"activityBar.activeBorder": "#14530d",
+		"activityBar.activeBackground": "#df3143",
 		"activityBar.background": "#df3143",
 		"activityBar.foreground": "#e7e7e7",
 		"activityBar.inactiveForeground": "#e7e7e799",
 		"activityBarBadge.background": "#14530d",
 		"activityBarBadge.foreground": "#e7e7e7",
+		"commandCenter.border": "#e7e7e799",
 		"sash.hoverBorder": "#df3143",
 		"statusBar.background": "#bf1e2e",
 		"statusBar.foreground": "#e7e7e7",
@@ -27,7 +38,8 @@
 		"titleBar.activeBackground": "#bf1e2e",
 		"titleBar.activeForeground": "#e7e7e7",
 		"titleBar.inactiveBackground": "#bf1e2e99",
-		"titleBar.inactiveForeground": "#e7e7e799",
-		"commandCenter.border": "#e7e7e799"
+		"titleBar.inactiveForeground": "#e7e7e799"
 	},
+	"peacock.color": "#bf1e2e",
+	"peacock.remoteColor": "#bf1e2e",
 }
