@@ -1,4 +1,4 @@
-.env*
+.env
 volumes
 node_modules
 .DS_Store

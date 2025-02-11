@@ -1,115 +1,104 @@
-x-api-environment: &api-environment
-    ALCOVES_TASK_DB_PORT: 6379
-    ALCOVES_TASK_DB_HOST: task_db
-    ALCOVES_TASK_WORKER_CONCURRENCY: 4
-    ALCOVES_DB_CONNECTION_STRING: postgres://postgres:postgres@postgres:5432/alcoves
-
-x-worker-environment: &worker-environment
-    ALCOVES_TASK_DB_PORT: 6379
-    ALCOVES_TASK_DB_HOST: task_db
-    ALCOVES_TASK_WORKER_CONCURRENCY: 4
-    ALCOVES_DB_CONNECTION_STRING: postgres://postgres:postgres@postgres:5432/alcoves
-
 services:
-    client:
-        container_name: client
-        build:
-            context: client
-            dockerfile: Dockerfile
-        command: bun run dev
-        environment:
-            VITE_API_URL: http://localhost:3000
-        volumes:
-            - ./client:/app
-            - /app/node_modules
-        depends_on:
-            - api
-        ports:
-            - 3005:3005
-    api:
-        container_name: api
-        build:
-            context: .
-            dockerfile: Dockerfile
-        command: bun run dev:api
-        environment:
-            <<: *api-environment
-        volumes:
-            - ./:/app
-            - /app/node_modules
-        depends_on:
-            - task_db
-            - minio
-            - minio_mb
-            - postgres
-        ports:
-            - 3000:3000
-    worker:
-        container_name: worker
-        build:
-            context: .
-            dockerfile: Dockerfile
-        command: bun run dev:worker
-        environment:
-            <<: *worker-environment
-        volumes:
-            - ./:/app
-            - /app/node_modules
-        depends_on:
-            - api
-            - task_db
-            - minio
-            - minio_mb
-            - postgres
-    task_db:
-        container_name: task_db
-        image: eqalpha/keydb:latest
-        restart: always
-        ulimits:
-            memlock: -1
-        ports:
-            - 6100:6379
-        volumes:
-            - task_db:/eqalpha/keydb
-    postgres:
-        container_name: postgres
-        image: postgres:16
-        restart: always
-        ports:
-            - 6200:5432
-        volumes:
-            - postgres:/var/lib/postgresql/data/
-        healthcheck:
-            test: ['CMD-SHELL', 'pg_isready', '-U', 'postgres', '-d', 'alcoves']
-            retries: 30
-            timeout: 5s
-            interval: 1s
-        user: postgres
-        environment:
-            POSTGRES_DB: alcoves
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-    minio:
-        image: minio/minio
-        volumes:
-            - minio:/data
-        environment:
-            MINIO_ROOT_USER: minioadmin
-            MINIO_ROOT_PASSWORD: minioadmin
-        ports:
-            - '9000:9000'
-            - '9001:9001'
-        command: server /data --console-address ":9001"
+  app:
+    build:
+      context: app
+      dockerfile: Dockerfile.dev
+    command: bash -c "bun db:migrate && bun dev"
+    container_name: app
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      - ./app:/opt/alcoves
+      - app_node_modules:/opt/alcoves/node_modules
+    depends_on:
+      minio:
+        condition: service_started
+      task_db:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+  task_db:
+    image: eqalpha/keydb:latest
+    restart: always
+    attach: false
+    ulimits:
+      memlock: -1
+    ports:
+      - 6100:6379
+    volumes:
+      - task_db:/eqalpha/keydb
+  postgres:
+    image: postgres:17
+    restart: always
+    attach: false
+    ports:
+      - 6200:5432
+    volumes:
+      - postgres:/var/lib/postgresql/data/
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready', '-U', 'postgres', '-d', 'alcoves' ]
+      retries: 30
+      timeout: 5s
+      interval: 1s
+    user: postgres
+    environment:
+      POSTGRES_DB: alcoves
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+  minio:
+    image: minio/minio:latest
+    attach: false
+    volumes:
+      - minio:/data
+    environment:
+      MINIO_ROOT_USER: ${ALCOVES_OBJECT_STORE_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${ALCOVES_OBJECT_STORE_SECRET_ACCESS_KEY}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://minio:9000/minio/health/live" ]
+      interval: 1s
+      timeout: 30s
+      retries: 10
+      start_period: 0s
+    command: server /data --console-address ":9001"
 
-    minio_mb:
-        image: minio/mc
-        depends_on:
-            - minio
-        entrypoint: sh -c "mc config host add minio http://minio:9000 minioadmin minioadmin && mc mb minio/alcoves"
+  # Not working with current version of bun
+  # drizzle-studio:
+  #   build:
+  #     context: app
+  #     dockerfile: Dockerfile.dev
+  #   command: bun run drizzle-kit studio --host=0.0.0.0
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - ./app:/opt/alcoves
+  #     - app_node_modules:/opt/alcoves/node_modules
+  #   restart: always
+  #   depends_on:
+  #     minio:
+  #       condition: service_started
+  #     task_db:
+  #       condition: service_started
+  #     postgres:
+  #       condition: service_healthy
+  #   ports:
+  #     - 4983:4983
+
+  minio_mb:
+    image: minio/mc:latest
+    attach: false
+    depends_on:
+      minio:
+        condition: service_healthy
+    env_file:
+      - .env
+    entrypoint: sh -c "mc config host add minio http://minio:9000 ${ALCOVES_OBJECT_STORE_ACCESS_KEY_ID} ${ALCOVES_OBJECT_STORE_SECRET_ACCESS_KEY} && mc mb minio/${ALCOVES_OBJECT_STORE_DEFAULT_BUCKET}"
+
 volumes:
-    minio:
-    task_db:
-    postgres:
-networks:
-    default:
-        name: alcoves
+  minio:
+  task_db:
+  postgres:
+  app_node_modules:
